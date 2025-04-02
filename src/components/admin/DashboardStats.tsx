@@ -4,6 +4,22 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DoorOpen, Dumbbell, Users, Calendar } from "lucide-react"
 
+interface Room {
+  id: string
+  status: string
+}
+
+interface Facility {
+  id: string
+  status: string
+}
+
+interface Booking {
+  id: string
+  status: string
+  checkIn: string
+}
+
 interface Stats {
   totalRooms: number
   totalFacilities: number
@@ -35,9 +51,9 @@ export default function DashboardStats() {
           fetch('/api/bookings')
         ])
 
-        const rooms = await roomsRes.json()
-        const facilities = await facilitiesRes.json()
-        const bookings = await bookingsRes.json()
+        const rooms: Room[] = await roomsRes.json()
+        const facilities: Facility[] = await facilitiesRes.json()
+        const bookings: Booking[] = await bookingsRes.json()
 
         const today = new Date()
         today.setHours(0, 0, 0, 0)
@@ -45,11 +61,11 @@ export default function DashboardStats() {
         setStats({
           totalRooms: rooms.length,
           totalFacilities: facilities.length,
-          activeGuests: bookings.filter((b: any) => b.status === 'CHECKED_IN').length,
+          activeGuests: bookings.filter((b) => b.status === 'CHECKED_IN').length,
           totalBookings: bookings.length,
-          availableRooms: rooms.filter((r: any) => r.status === 'AVAILABLE').length,
-          availableFacilities: facilities.filter((f: any) => f.status === 'AVAILABLE').length,
-          pendingCheckIns: bookings.filter((b: any) => 
+          availableRooms: rooms.filter((r) => r.status === 'AVAILABLE').length,
+          availableFacilities: facilities.filter((f) => f.status === 'AVAILABLE').length,
+          pendingCheckIns: bookings.filter((b) => 
             b.status === 'CONFIRMED' && 
             new Date(b.checkIn) >= today
           ).length
