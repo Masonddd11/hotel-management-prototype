@@ -1,0 +1,176 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Hotel {
+  id          String      @id @default(cuid())
+  name        String
+  address     String
+  description String?
+  rooms       Room[]
+  facilities  Facility[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Room {
+  id          String       @id @default(cuid())
+  number      String
+  type        RoomType
+  basePrice   Float        // Base price for non-members
+  vipDiscount Float?       // Percentage discount for VIP members
+  size        Float        // Size in square meters
+  capacity    Int          // Maximum number of guests
+  amenities   String[]
+  status      RoomStatus   @default(AVAILABLE)
+  hotelId     String
+  hotel       Hotel        @relation(fields: [hotelId], references: [id])
+  bookings    RoomBooking[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Facility {
+  id          String            @id @default(cuid())
+  name        String
+  type        FacilityType
+  basePrice   Float             // Base price for non-members
+  vipDiscount Float?            // Percentage discount for VIP members
+  capacity    Int               // Maximum capacity at a time
+  description String?
+  status      FacilityStatus    @default(AVAILABLE)
+  hotelId     String
+  hotel       Hotel             @relation(fields: [hotelId], references: [id])
+  bookings    FacilityBooking[]
+  operatingHours OperatingHours[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model OperatingHours {
+  id          String    @id @default(cuid())
+  facilityId  String
+  facility    Facility  @relation(fields: [facilityId], references: [id])
+  dayOfWeek   DayOfWeek
+  openTime    String    // Format: "HH:mm"
+  closeTime   String    // Format: "HH:mm"
+}
+
+model Membership {
+  id          String          @id @default(cuid())
+  type        MembershipType
+  discountRate Float          // Percentage discount (e.g., 0.1 for 10%)
+  guest       Guest           @relation(fields: [guestId], references: [id])
+  guestId     String          @unique
+  validUntil  DateTime
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model Guest {
+  id               String            @id @default(cuid())
+  name             String
+  email            String            @unique
+  password         String
+  phone            String?
+  membership       Membership?
+  roomBookings     RoomBooking[]
+  facilityBookings FacilityBooking[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model RoomBooking {
+  id           String        @id @default(cuid())
+  roomId       String
+  room         Room          @relation(fields: [roomId], references: [id])
+  guestId      String
+  guest        Guest         @relation(fields: [guestId], references: [id])
+  checkIn      DateTime
+  checkOut     DateTime
+  numberOfGuests Int
+  finalPrice   Float         // Price after applying membership discount
+  status       BookingStatus @default(PENDING)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model FacilityBooking {
+  id          String        @id @default(cuid())
+  facilityId  String
+  facility    Facility      @relation(fields: [facilityId], references: [id])
+  guestId     String
+  guest       Guest         @relation(fields: [guestId], references: [id])
+  startTime   DateTime
+  endTime     DateTime
+  finalPrice  Float         // Price after applying membership discount
+  status      BookingStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+enum RoomType {
+  STANDARD
+  DELUXE
+  SUITE
+  PRESIDENTIAL
+}
+
+enum RoomStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+  CLEANING
+}
+
+enum FacilityType {
+  GYM
+  SAUNA
+  POOL
+  SPA
+  CONFERENCE_ROOM
+  TENNIS_COURT
+}
+
+enum FacilityStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+  CLEANING
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CHECKED_IN
+  CHECKED_OUT
+  CANCELLED
+}
+
+enum MembershipType {
+  SILVER
+  GOLD
+  PLATINUM
+  DIAMOND
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
