@@ -1,16 +1,25 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import Cookies from "js-cookie"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Hotel, BarChart } from "lucide-react"
+import { Hotel, BarChart, LogOut } from "lucide-react"
 import RoomManagement from "@/components/admin/RoomManagement"
 import FacilityManagement from "@/components/admin/FacilityManagement"
 import DashboardStats from "@/components/admin/DashboardStats"
+import { Button } from "@/components/ui/button"
 
 export default function AdminDashboardPage() {
+
+  const router = useRouter()
+
+  if (!Cookies.get("token")) {
+    router.push("/admin/login")
+  }
+
   const [activeTab, setActiveTab] = useState("overview")
-  
   return (
     <div className="container mx-auto py-6 px-4 md:px-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -23,6 +32,13 @@ export default function AdminDashboardPage() {
         <div className="flex items-center gap-2 text-2xl font-bold">
           <Hotel className="h-8 w-8 text-primary" />
           <span>Hotel Management System</span>
+          <Button variant="outline" onClick={() => {
+            Cookies.remove("token")
+            router.push("/admin/login")
+          }}>
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </Button>
         </div>
       </div>
       
@@ -94,4 +110,4 @@ export default function AdminDashboardPage() {
       </Tabs>
     </div>
   )
-} 
+}

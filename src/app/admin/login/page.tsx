@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-
+import Cookies from "js-cookie"
 export default function AdminLoginPage() {
 
   const router = useRouter()
@@ -20,7 +20,8 @@ export default function AdminLoginPage() {
 
   const handleLogin = () => {
     if (email === "admin@hotel.com" && password === "admin") {
-      router.push("admin/dashboard")
+      Cookies.set("token", "admin")
+      router.push("/admin/dashboard")
     } else {
       alert("Invalid credentials")
     }
