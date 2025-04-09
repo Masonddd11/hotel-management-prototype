@@ -5,10 +5,10 @@ import { DayOfWeek } from '@prisma/client'
 // GET /api/facilities/[id] - Get a specific facility
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: { id: string } }
 ) {
   try {
-    const { id } = await params
+    const { id } = context.params
     const facility = await prisma.facility.findUnique({
       where: {
         id,
@@ -39,10 +39,10 @@ export async function GET(
 // PUT /api/facilities/[id] - Update a facility
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: { id: string } }
 ) {
   try {
-    const { id } = await params
+    const { id } = context.params
     const data = await request.json()
     
     // First, update the facility
@@ -107,10 +107,10 @@ export async function PUT(
 // DELETE /api/facilities/[id] - Delete a facility
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: { id: string } }
 ) {
   try {
-    const { id } = await params
+    const { id } = context.params
     // First delete all operating hours
     await prisma.operatingHours.deleteMany({
       where: {
