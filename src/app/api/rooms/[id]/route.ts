@@ -4,10 +4,10 @@ import { prisma } from '@/lib/prisma'
 // GET /api/rooms/[id] - Get a specific room
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = context.params
+    const { id } = await params
     const room = await prisma.room.findUnique({
       where: {
         id,
@@ -37,10 +37,10 @@ export async function GET(
 // PUT /api/rooms/[id] - Update a room
 export async function PUT(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = context.params
+    const { id } = await params
     const data = await request.json()
     
     const room = await prisma.room.update({
@@ -72,10 +72,10 @@ export async function PUT(
 // DELETE /api/rooms/[id] - Delete a room
 export async function DELETE(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = context.params
+    const { id } = await params
     // Check if room exists
     const room = await prisma.room.findUnique({
       where: {

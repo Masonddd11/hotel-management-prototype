@@ -1,20 +1,18 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from '@/lib/prisma'
-import { DayOfWeek } from '@prisma/client'
 
 // GET /api/facilities/[id] - Get a specific facility
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = context.params
+    const { id } = await params
     const facility = await prisma.facility.findUnique({
       where: {
         id,
       },
       include: {
-        operatingHours: true,
         bookings: true,
       },
     })
@@ -39,13 +37,12 @@ export async function GET(
 // PUT /api/facilities/[id] - Update a facility
 export async function PUT(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = context.params
+    const { id } = await params
     const data = await request.json()
     
-    // First, update the facility
     const facility = await prisma.facility.update({
       where: {
         id,
@@ -53,46 +50,11 @@ export async function PUT(
       data: {
         name: data.name,
         type: data.type,
-        basePrice: data.basePrice,
-        vipDiscount: data.vipDiscount,
         capacity: data.capacity,
-        description: data.description || '',
+        operatingHours: data.operatingHours,
         status: data.status,
       },
-      include: {
-        operatingHours: true,
-      },
     })
-    
-    // If operatingHours are provided, update them
-    if (data.operatingHours && Array.isArray(data.operatingHours)) {
-      // Delete all existing hours
-      await prisma.operatingHours.deleteMany({
-        where: {
-          facilityId: id,
-        },
-      })
-      
-      // Create new hours
-      const hours = await Promise.all(
-        data.operatingHours.map((hour: { dayOfWeek: DayOfWeek; openTime: string; closeTime: string }) =>
-          prisma.operatingHours.create({
-            data: {
-              facilityId: id,
-              dayOfWeek: hour.dayOfWeek,
-              openTime: hour.openTime,
-              closeTime: hour.closeTime,
-            },
-          })
-        )
-      )
-      
-      // Return the updated facility with new hours
-      return NextResponse.json({
-        ...facility,
-        operatingHours: hours,
-      })
-    }
     
     return NextResponse.json(facility)
   } catch (error) {
@@ -107,18 +69,40 @@ export async function PUT(
 // DELETE /api/facilities/[id] - Delete a facility
 export async function DELETE(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = context.params
-    // First delete all operating hours
-    await prisma.operatingHours.deleteMany({
+    const { id } = await params
+    // Check if facility exists
+    const facility = await prisma.facility.findUnique({
       where: {
-        facilityId: id,
+        id,
+      },
+      include: {
+        bookings: true,
       },
     })
     
-    // Then delete the facility
+    if (!facility) {
+      return NextResponse.json(
+        { error: 'Facility not found' },
+        { status: 404 }
+      )
+    }
+    
+    // Check if facility has active bookings
+    const activeBookings = facility.bookings.filter(
+      booking => ['PENDING', 'CONFIRMED'].includes(booking.status)
+    )
+    
+    if (activeBookings.length > 0) {
+      return NextResponse.json(
+        { error: 'Cannot delete facility with active bookings' },
+        { status: 400 }
+      )
+    }
+    
+    // Delete the facility
     await prisma.facility.delete({
       where: {
         id,
