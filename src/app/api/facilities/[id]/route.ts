@@ -1,16 +1,17 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from "next/server"
 import { prisma } from '@/lib/prisma'
 import { DayOfWeek } from '@prisma/client'
 
 // GET /api/facilities/[id] - Get a specific facility
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const facility = await prisma.facility.findUnique({
       where: {
-        id: params.id,
+        id,
       },
       include: {
         operatingHours: true,
@@ -27,7 +28,7 @@ export async function GET(
     
     return NextResponse.json(facility)
   } catch (error) {
-    console.error(`Error fetching facility ${params.id}:`, error)
+    console.error('Error fetching facility:', error)
     return NextResponse.json(
       { error: 'Failed to fetch facility' },
       { status: 500 }
@@ -37,16 +38,17 @@ export async function GET(
 
 // PUT /api/facilities/[id] - Update a facility
 export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const data = await request.json()
     
     // First, update the facility
     const facility = await prisma.facility.update({
       where: {
-        id: params.id,
+        id,
       },
       data: {
         name: data.name,
@@ -67,7 +69,7 @@ export async function PUT(
       // Delete all existing hours
       await prisma.operatingHours.deleteMany({
         where: {
-          facilityId: params.id,
+          facilityId: id,
         },
       })
       
@@ -76,7 +78,7 @@ export async function PUT(
         data.operatingHours.map((hour: { dayOfWeek: DayOfWeek; openTime: string; closeTime: string }) =>
           prisma.operatingHours.create({
             data: {
-              facilityId: params.id,
+              facilityId: id,
               dayOfWeek: hour.dayOfWeek,
               openTime: hour.openTime,
               closeTime: hour.closeTime,
@@ -94,7 +96,7 @@ export async function PUT(
     
     return NextResponse.json(facility)
   } catch (error) {
-    console.error(`Error updating facility ${params.id}:`, error)
+    console.error('Error updating facility:', error)
     return NextResponse.json(
       { error: 'Failed to update facility' },
       { status: 500 }
@@ -104,27 +106,28 @@ export async function PUT(
 
 // DELETE /api/facilities/[id] - Delete a facility
 export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // First delete all operating hours
     await prisma.operatingHours.deleteMany({
       where: {
-        facilityId: params.id,
+        facilityId: id,
       },
     })
     
     // Then delete the facility
     await prisma.facility.delete({
       where: {
-        id: params.id,
+        id,
       },
     })
     
     return NextResponse.json({ message: 'Facility deleted successfully' })
   } catch (error) {
-    console.error(`Error deleting facility ${params.id}:`, error)
+    console.error('Error deleting facility:', error)
     return NextResponse.json(
       { error: 'Failed to delete facility' },
       { status: 500 }
