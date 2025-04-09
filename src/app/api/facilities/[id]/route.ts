@@ -2,14 +2,11 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { DayOfWeek } from '@prisma/client'
 
-interface RouteParams {
-  params: {
-    id: string
-  }
-}
-
 // GET /api/facilities/[id] - Get a specific facility
-export async function GET(request: Request, { params }: RouteParams) {
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
     const facility = await prisma.facility.findUnique({
       where: {
@@ -39,7 +36,10 @@ export async function GET(request: Request, { params }: RouteParams) {
 }
 
 // PUT /api/facilities/[id] - Update a facility
-export async function PUT(request: Request, { params }: RouteParams) {
+export async function PUT(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
     const data = await request.json()
     
@@ -103,52 +103,26 @@ export async function PUT(request: Request, { params }: RouteParams) {
 }
 
 // DELETE /api/facilities/[id] - Delete a facility
-export async function DELETE(request: Request, { params }: RouteParams) {
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    // Check if facility exists
-    const facility = await prisma.facility.findUnique({
-      where: {
-        id: params.id,
-      },
-      include: {
-        bookings: true,
-      },
-    })
-    
-    if (!facility) {
-      return NextResponse.json(
-        { error: 'Facility not found' },
-        { status: 404 }
-      )
-    }
-    
-    // Check if facility has active bookings
-    const activeBookings = facility.bookings.filter(
-      booking => ['PENDING', 'CONFIRMED', 'CHECKED_IN'].includes(booking.status)
-    )
-    
-    if (activeBookings.length > 0) {
-      return NextResponse.json(
-        { error: 'Cannot delete facility with active bookings' },
-        { status: 400 }
-      )
-    }
-    
-    // Delete operating hours
+    // First delete all operating hours
     await prisma.operatingHours.deleteMany({
       where: {
         facilityId: params.id,
       },
     })
     
-    // Delete the facility
+    // Then delete the facility
     await prisma.facility.delete({
       where: {
         id: params.id,
       },
     })
     
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ message: 'Facility deleted successfully' })
   } catch (error) {
     console.error(`Error deleting facility ${params.id}:`, error)
     return NextResponse.json(
